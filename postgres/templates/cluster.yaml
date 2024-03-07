@@ -1,0 +1,57 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: poc-db
+spec:
+  instances: 2
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.1
+  # minSyncReplicas: 1 # 同期レプリケーションの最小数
+  # maxSyncReplicas: 1 # 同期レプリケーションの最大数
+  # primaryUpdateStrategy: unsupervised # アップデート時のプライマリの挙動
+  postgresql:
+    parameters:
+      shared_buffers: 256MB
+      pg_stat_statements.max: "10000"
+      pg_stat_statements.track: all
+      auto_explain.log_min_duration: "10s"
+    pg_hba:
+      - host all all 10.244.0.0/16 md5
+  #     - hostssl all all 0.0.0.0/0 md5
+  #     - host    all all 0.0.0.0/0 md5
+  bootstrap:
+    initdb:
+      database: appdb
+      owner: appuser
+      postInitSQL:
+        - create table numbers (i integer)
+        - insert into numbers (select generate_series(1,10000))
+      postInitTemplateSQL:
+        - create extension intarray
+      postInitApplicationSQL:
+        - create table application_numbers (i integer)
+        - insert into application_numbers (select generate_series(1,10000))
+      postInitApplicationSQLRefs:
+        configMapRefs:
+          - name: post-init-sql-configmap
+            key: configmap.sql
+        secretRefs:
+          - name: post-init-sql-secret
+            key: secret.sql
+      encoding: "UTF8"
+  storage:
+    size: 1Gi
+    pvcTemplate:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: standard
+      volumeMode: Filesystem
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: 1
+    limits:
+      memory: "1024Mi"
+      cpu: 2

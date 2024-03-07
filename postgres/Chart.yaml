@@ -1,0 +1,13 @@
+apiVersion: v2
+name: postgres
+description: A Helm chart for postgres
+type: application
+version: 0.20.1
+appVersion: 1.22.1
+dependencies:
+  - name: cloudnative-pg
+    version: 0.20.1
+    repository: https://cloudnative-pg.github.io/charts/
+  - name: cluster
+    version: 0.0.2
+    repository: https://cloudnative-pg.github.io/charts/
